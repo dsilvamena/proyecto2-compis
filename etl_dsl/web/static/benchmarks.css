@@ -1,0 +1,174 @@
+/* Página de benchmarks: reutiliza los tokens y componentes de styles.css. Los colores de las
+   series se leen desde aquí en benchmarks.js, así que el modo oscuro cambia en un solo lugar. */
+
+:root {
+  --s-dsl: #2a78d6;
+  --s-polars: #eb6834;
+  --s-duckdb: #1baf7a;
+  --s-pandas: #eda100;
+  --s-dsl-suave: #86b6ef;
+  --on-suave: #0b1620;
+  --miss: #c3c2b7;
+  --grid: #e8ebee;
+  --t-1: #2a78d6;
+  --t-2: #6da7ec;
+  --t-3: #9ec5f4;
+  --t-4: #cde2fb;
+  --task-1: #6250d6;
+  --task-2: #008300;
+  --task-3: #8c564b;
+  --task-4: #e34948;
+  --task-5: #52514e;
+  --hero-a: #e8f1fc;
+  --hero-b: #fdf0e9;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --s-dsl: #3987e5;
+    --s-polars: #d95926;
+    --s-duckdb: #199e70;
+    --s-pandas: #c98500;
+    --s-dsl-suave: #86b6ef;
+    --miss: #5a5955;
+    --grid: #263441;
+    --t-1: #3987e5;
+    --t-2: #256abf;
+    --t-3: #184f95;
+    --t-4: #0d366b;
+    --task-1: #9085e9;
+    --task-2: #2ba52b;
+    --task-3: #c49c94;
+    --task-4: #e66767;
+    --task-5: #c3c2b7;
+    --hero-a: #13263b;
+    --hero-b: #2a1d17;
+  }
+}
+
+body.bench { height: auto; min-height: 100vh; display: block; }
+
+.bench-main { max-width: 1160px; margin: 0 auto; padding: 22px 16px 48px; display: grid; gap: 20px; }
+.bench-main code { font-family: var(--font-mono); font-size: 0.9em; }
+
+.kicker {
+  margin: 0 0 6px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero {
+  padding: 26px 26px 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(120deg, var(--hero-a), var(--surface) 55%, var(--hero-b));
+}
+.hero h2 { margin: 0 0 18px; max-width: 880px; font-size: clamp(22px, 3.1vw, 31px); line-height: 1.22; }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.kpi {
+  position: relative;
+  padding: 16px 16px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.kpi::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--kpi, var(--s-dsl)); }
+.kpi .value { display: block; font-size: 29px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.kpi .label { display: block; margin-top: 6px; color: var(--muted); font-size: 13px; }
+
+.card { padding: 20px 22px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; min-width: 0; }
+.card > header h2 { margin: 0 0 6px; font-size: clamp(19px, 2.3vw, 22px); line-height: 1.25; }
+.card > header p:not(.kicker) { margin: 0 0 14px; color: var(--muted); max-width: 820px; }
+
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+.controls .segmented { flex-wrap: wrap; }
+.controls .segmented button { padding: 6px 12px; }
+.controls .segmented button + button { border-left: 1px solid var(--line); }
+
+.chart-box { position: relative; height: 320px; }
+.chart-box.tall { height: 400px; }
+.chart-box.short { height: 230px; }
+
+.callout {
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  border-left: 4px solid var(--s-dsl);
+  background: var(--bg);
+  border-radius: 0 8px 8px 0;
+  max-width: 880px;
+}
+.note { margin: 8px 0 0; color: var(--muted); font-size: 13px; max-width: 860px; }
+
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.steps { margin: 0; padding-left: 22px; display: grid; gap: 10px; }
+
+.code-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.code-panel { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg); min-width: 0; }
+.code-panel header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  border-top: 4px solid var(--c);
+  background: var(--surface);
+  font-size: 13px;
+}
+.code-panel header b { font-size: 14px; }
+.code-panel header span { color: var(--muted); font-variant-numeric: tabular-nums; }
+.code-panel pre { margin: 0; padding: 12px; overflow-x: auto; font: 12px/1.55 var(--font-mono); }
+.code-panel .kw { color: var(--accent); font-weight: 600; }
+
+.cases { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.cases-head, .cases summary {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 130px 120px;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 12px;
+}
+.cases-head {
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cases details { border-bottom: 1px solid var(--line); }
+.cases details:last-child { border-bottom: 0; }
+.cases summary { cursor: pointer; list-style: none; }
+.cases summary::-webkit-details-marker { display: none; }
+.cases summary:hover { background: var(--bg); }
+.cases .num { font-family: var(--font-mono); color: var(--muted); }
+.cases .body { padding: 4px 12px 12px 50px; display: grid; gap: 6px; font-size: 13px; }
+.cases .body p { margin: 0; }
+.cases .body pre { margin: 0; white-space: pre-wrap; padding: 6px 8px; background: var(--bg); border-radius: 6px; font: 12px/1.5 var(--font-mono); }
+.badge { justify-self: start; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.badge.compilación { background: var(--s-dsl); color: #ffffff; }
+.badge.ejecución { background: var(--s-dsl-suave); color: var(--on-suave); }
+.badge.silencioso, .badge.no-detectado { background: var(--miss); color: var(--text); }
+
+.bench-footer { color: var(--muted); font-size: 13px; }
+.bench-footer p { margin: 0 0 4px; }
+
+@media (max-width: 860px) {
+  .grid2, .split, .code-compare { grid-template-columns: 1fr; }
+  .chart-box.tall { height: 360px; }
+}
+@media (max-width: 600px) {
+  .cases-head { display: none; }
+  .cases summary { grid-template-columns: 24px minmax(0, 1fr); }
+  .cases summary .badge { grid-column: 2; }
+  .cases .body { padding-left: 12px; }
+  .hero { padding: 20px 16px; }
+  .card { padding: 16px 14px; }
+  .kpi .value { font-size: 25px; }
+}
