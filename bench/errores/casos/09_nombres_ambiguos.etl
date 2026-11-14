@@ -1,0 +1,7 @@
+// Dos columnas que solo difieren en mayúsculas: chocan al escribir en SQL o DuckDB.
+PIPELINE caso {
+    FROM PARQUET(file: "ventas.parquet")
+        AS TABLE[id: INT, cliente_id: INT, canal: STRING?, monto: DECIMAL?, descuento: DECIMAL];
+    DERIVE { Monto = monto * 2; }
+    TO PARQUET(file: "salida/caso.parquet");
+}

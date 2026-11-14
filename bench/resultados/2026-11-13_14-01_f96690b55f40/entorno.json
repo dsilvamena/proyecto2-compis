@@ -1,0 +1,90 @@
+{
+  "fecha": "2026-11-13T14:01:35+00:00",
+  "plataforma": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.41",
+  "cpu": "Intel(R) Core(TM) Ultra 9 285K",
+  "hilos": 24,
+  "memoria_total_gb": 31.02,
+  "limite_cgroup": "max",
+  "python": "3.12.16",
+  "versiones": {
+    "polars": "2.1.0",
+    "duckdb": "1.5.6",
+    "pandas": "2.2.3",
+    "pyarrow": "18.1.0",
+    "numpy": "2.5.4",
+    "lark": "1.3.1"
+  },
+  "parametros": {
+    "sf": [
+      1.0,
+      30.0
+    ],
+    "tareas": [
+      "devoluciones",
+      "ingreso_descuento",
+      "ingreso_por_pedido",
+      "limpieza_pedidos",
+      "resumen_precios"
+    ],
+    "configuraciones": [
+      "dsl",
+      "polars",
+      "pandas",
+      "duckdb",
+      "dsl-O0",
+      "dsl-constantes",
+      "dsl-filtros",
+      "dsl-codigo_muerto",
+      "dsl-sin-opt-polars",
+      "dsl-O0-sin-opt-polars",
+      "polars-sin-opt-polars"
+    ],
+    "repeticiones": 10,
+    "limite_s": 1800.0,
+    "semilla": 2026
+  },
+  "datos": {
+    "1": {
+      "sf": 1.0,
+      "tablas": {
+        "lineitem": 6001215,
+        "orders": 1500000,
+        "customer": 150000,
+        "nation": 25,
+        "orders_sucio": 1530000
+      },
+      "bytes": {
+        "lineitem.parquet": 153964856,
+        "orders.parquet": 37184559,
+        "customer.parquet": 8137939,
+        "nation.parquet": 1947,
+        "orders_sucio.parquet": 17010482
+      },
+      "duckdb": "1.5.6",
+      "segundos_dbgen": 7.98,
+      "segundos_total": 9.93,
+      "generado": "2026-11-13T13:53:23+00:00"
+    },
+    "30": {
+      "sf": 30.0,
+      "tablas": {
+        "lineitem": 179998372,
+        "orders": 45000000,
+        "customer": 4500000,
+        "nation": 25,
+        "orders_sucio": 45900000
+      },
+      "bytes": {
+        "lineitem.parquet": 4899883997,
+        "orders.parquet": 1215556489,
+        "customer.parquet": 242695583,
+        "nation.parquet": 1947,
+        "orders_sucio.parquet": 611917259
+      },
+      "duckdb": "1.5.6",
+      "segundos_dbgen": 328.46,
+      "segundos_total": 394.58,
+      "generado": "2026-11-13T13:59:58+00:00"
+    }
+  }
+}

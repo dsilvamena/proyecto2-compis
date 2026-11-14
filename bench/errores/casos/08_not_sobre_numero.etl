@@ -1,0 +1,7 @@
+// NOT aplicado a un número en lugar de a una condición.
+PIPELINE caso {
+    FROM PARQUET(file: "ventas.parquet")
+        AS TABLE[id: INT, cliente_id: INT, canal: STRING?, monto: DECIMAL?, descuento: DECIMAL];
+    FILTER { WHERE NOT cliente_id; }
+    TO PARQUET(file: "salida/caso.parquet");
+}

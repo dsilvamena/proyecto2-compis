@@ -1,0 +1,7 @@
+// El esquema declara monto sin ?, pero los datos traen montos faltantes.
+PIPELINE caso {
+    FROM PARQUET(file: "ventas.parquet")
+        AS TABLE[id: INT, cliente_id: INT, canal: STRING?, monto: DECIMAL, descuento: DECIMAL];
+    AGGREGATE { GROUP_BY cliente_id; SUM(monto) AS total; }
+    TO PARQUET(file: "salida/caso.parquet");
+}

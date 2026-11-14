@@ -1,0 +1,7 @@
+// La salida promete una columna total, pero la agregación la llama suma.
+PIPELINE caso {
+    FROM PARQUET(file: "ventas.parquet")
+        AS TABLE[id: INT, cliente_id: INT, canal: STRING?, monto: DECIMAL?, descuento: DECIMAL];
+    AGGREGATE { GROUP_BY cliente_id; SUM(monto) AS suma; }
+    TO OUTPUT resumen: TABLE[cliente_id: INT, total: DECIMAL?];
+}

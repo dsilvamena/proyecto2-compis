@@ -69,6 +69,16 @@ button, select { font: inherit; color: inherit; }
 }
 .topbar h1 { margin: 0; font-size: 17px; font-weight: 700; }
 
+.pages { display: flex; gap: 4px; }
+.pages a {
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: var(--muted);
+  text-decoration: none;
+}
+.pages a:hover { background: var(--bg); color: var(--text); }
+.pages a[aria-current="page"] { background: var(--bg); color: var(--text); font-weight: 600; }
+
 .field { display: flex; align-items: center; gap: 8px; color: var(--muted); }
 .field select {
   min-width: 220px;

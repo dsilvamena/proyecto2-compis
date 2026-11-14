@@ -64,6 +64,31 @@ python bench/todo.py --limite 1800             # segundos máximos por medición
 | `verificacion.txt` | Resultado de la verificación de equivalencia |
 | `log.txt` | Salida completa de las mediciones |
 
+## Análisis y otras evaluaciones
+
+Con las corridas guardadas en `bench/resultados/` (descomprimidas, una carpeta por
+corrida), estos scripts no necesitan los datos TPC-H y tardan segundos:
+
+```bash
+docker compose run --rm bench python bench/errores.py        # detección de errores
+docker compose run --rm bench python bench/expresividad.py   # líneas y tokens
+docker compose run --rm bench python bench/analisis.py       # tablas y gráficos del reporte
+```
+
+- `errores.py` ejecuta cada caso de `errores/casos/` (un `.etl` y su equivalente en
+  Polars) sobre datos pequeños y registra cuándo se detecta el error, en
+  `resultados/errores.csv`.
+- `expresividad.py` cuenta líneas y tokens de las cuatro versiones de cada tarea, en
+  `resultados/expresividad.csv`.
+- `analisis.py` combina las corridas (si una escala se midió en varias, usa la que tiene
+  más mediciones correctas) y escribe en `reporte/generado/` las tablas `.tex`, las
+  figuras `.pdf`, `cifras.tex` con las cifras que cita el texto y `resumen.csv`. También
+  escribe `etl_dsl/web/static/benchmarks.json`, que alimenta la página interactiva
+  **Benchmarks** del entorno web (`http://127.0.0.1:8000/benchmarks.html`).
+
+Las corridas del laboratorio están en `resultados/2026-11-13_lab-pc1/` (SF 1, 10 y 20) y
+`resultados/2026-11-13_14-01_f96690b55f40/` (SF 1 y 30); ver el `NOTAS.md` de la primera.
+
 ## Tareas
 
 Cada carpeta de `tareas/` tiene la misma tarea cuatro veces: `programa.etl`,

@@ -1,0 +1,10 @@
+// JOIN de un id numérico con el nombre (texto) del cliente.
+PIPELINE caso {
+    SOURCE ventas: TABLE[id: INT, cliente_id: INT, canal: STRING?, monto: DECIMAL?, descuento: DECIMAL]
+        = PARQUET(file: "ventas.parquet");
+    SOURCE clientes: TABLE[codigo: INT, nombre: STRING, region: STRING]
+        = PARQUET(file: "clientes.parquet");
+    STEP union = JOIN { TYPE INNER; ON left.cliente_id == right.nombre; }
+    SINK salida = PARQUET(file: "salida/caso.parquet");
+    FLOW { ventas -> union.left; clientes -> union.right; union -> salida; }
+}

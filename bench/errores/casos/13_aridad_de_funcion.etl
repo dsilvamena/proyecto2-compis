@@ -1,0 +1,7 @@
+// COALESCE con un solo argumento no completa nada.
+PIPELINE caso {
+    FROM PARQUET(file: "ventas.parquet")
+        AS TABLE[id: INT, cliente_id: INT, canal: STRING?, monto: DECIMAL?, descuento: DECIMAL];
+    DERIVE { monto_final = COALESCE(monto); }
+    TO PARQUET(file: "salida/caso.parquet");
+}

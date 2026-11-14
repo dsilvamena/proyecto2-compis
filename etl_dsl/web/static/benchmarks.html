@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Benchmarks del DSL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="benchmarks.css">
+</head>
+<body class="bench">
+  <header class="topbar">
+    <h1>Entorno DSL ETL</h1>
+    <nav class="pages" aria-label="Páginas">
+      <a href="./">Editor</a>
+      <a href="benchmarks.html" aria-current="page">Benchmarks</a>
+    </nav>
+    <span class="status" id="status" role="status" aria-live="polite">Cargando…</span>
+  </header>
+
+  <main class="bench-main">
+    <section class="hero">
+      <p class="kicker">Evaluación experimental · TPC-H, de SF 1 a SF 30</p>
+      <h2>El DSL corre a la velocidad de Polars escrito a mano, con menos código y detectando
+        los errores antes de tocar los datos.</h2>
+      <div class="kpis" id="kpis"></div>
+    </section>
+
+    <section class="card">
+      <header>
+        <p class="kicker">Los datos</p>
+        <h2>Cuántos datos se procesaron</h2>
+        <p id="datos-texto">Filas de cada tabla de TPC-H, en millones, por factor de escala.</p>
+      </header>
+      <div class="chart-box"><canvas id="g-datos" aria-label="Filas por tabla y factor de escala"></canvas></div>
+      <p class="note" id="datos-nota"></p>
+    </section>
+
+    <section class="card">
+      <header>
+        <p class="kicker">Rendimiento</p>
+        <h2>Tiempo de cada tarea</h2>
+        <p>Mediana de <span data-cifra="repeticiones"></span> repeticiones, en segundos; menos es mejor.
+          Toca un sistema en la leyenda para ocultarlo.</p>
+      </header>
+      <div class="controls">
+        <div class="segmented" role="group" aria-label="Factor de escala" id="tiempo-sf"></div>
+        <div class="segmented" role="group" aria-label="Eje vertical" id="tiempo-eje"></div>
+        <span class="hint" id="tiempo-info"></span>
+      </div>
+      <div class="chart-box tall"><canvas id="g-tiempo" aria-label="Tiempo por tarea y sistema"></canvas></div>
+    </section>
+
+    <section class="card">
+      <header>
+        <p class="kicker">Escalabilidad</p>
+        <h2>Tiempo según el tamaño de los datos</h2>
+        <p>Cada punto es la mediana en una escala; el eje horizontal es el factor de escala.</p>
+      </header>
+      <div class="controls">
+        <div class="segmented" role="group" aria-label="Tarea" id="escala-tarea"></div>
+        <div class="segmented" role="group" aria-label="Eje vertical" id="escala-eje"></div>
+      </div>
+      <div class="chart-box tall"><canvas id="g-escala" aria-label="Tiempo por factor de escala"></canvas></div>
+      <p class="callout" id="escala-nota"></p>
+    </section>
+
+    <div class="grid2">
+      <section class="card">
+        <header>
+          <p class="kicker">Costo del DSL</p>
+          <h2>DSL frente a Polars a mano</h2>
+          <p>Tiempo del DSL dividido por el de Polars. La línea en 1 es empate; arriba es más lento.</p>
+        </header>
+        <div class="chart-box"><canvas id="g-razon" aria-label="Razón DSL sobre Polars por escala"></canvas></div>
+      </section>
+      <section class="card">
+        <header>
+          <p class="kicker">Frente a Pandas</p>
+          <h2>Cuántas veces más rápido que Pandas</h2>
+          <p>Tiempo de Pandas dividido por el del DSL, en SF&nbsp;<span data-cifra="SFmax"></span>.</p>
+        </header>
+        <div class="chart-box"><canvas id="g-pandas" aria-label="Aceleración frente a Pandas"></canvas></div>
+      </section>
+    </div>
+
+    <section class="card">
+      <header>
+        <p class="kicker">La excepción</p>
+        <h2>Limpieza de pedidos: <span data-cifra="limpiezaRazon"></span>× más lento que Polars</h2>
+        <p>Es la única tarea en que el DSL se aleja de Polars, y la causa está identificada.</p>
+      </header>
+      <div class="split">
+        <ol class="steps">
+          <li><strong>El DSL promete un orden estable.</strong> Por eso genera
+            <code>sort(..., maintain_order=True)</code>.</li>
+          <li><strong>Polars propaga esa promesa hacia atrás.</strong> El <code>unique()</code> del
+            <code>DISTINCT</code> pasa a conservar el orden de entrada, que es mucho más caro.</li>
+          <li><strong>Aquí la promesa no hace falta.</strong> Se ordena por la misma clave del
+            <code>GROUP_BY</code>, así que no puede haber empates.</li>
+          <li><strong>Solución propuesta:</strong> un pase de <em>orden innecesario</em> que quite el
+            indicador cuando las claves del <code>SORT</code> incluyen las del <code>GROUP_BY</code>.</li>
+        </ol>
+        <div>
+          <div class="chart-box short"><canvas id="g-limpieza" aria-label="Limpieza de pedidos con y sin maintain_order"></canvas></div>
+          <p class="note">Experimento aislado en SF&nbsp;5: el mismo plan, con y sin el indicador.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <header>
+        <p class="kicker">Optimizaciones</p>
+        <h2>El optimizador de Polars hace el trabajo pesado</h2>
+        <p>Cuántas veces más lento queda cada programa al quitar una capa de optimización. La línea
+          en 1 es «sin cambio».</p>
+      </header>
+      <div class="controls">
+        <div class="segmented" role="group" aria-label="Factor de escala" id="opt-sf"></div>
+      </div>
+      <div class="chart-box tall"><canvas id="g-opt" aria-label="Efecto de quitar cada optimización"></canvas></div>
+    </section>
+
+    <section class="card">
+      <header>
+        <p class="kicker">Memoria</p>
+        <h2 id="t-memoria">Memoria pico</h2>
+        <p>El DSL hereda la evaluación diferida de Polars: lee solo las columnas y filas que usa.
+          Pandas carga las tablas completas.</p>
+      </header>
+      <div class="controls">
+        <div class="segmented" role="group" aria-label="Factor de escala" id="memoria-sf"></div>
+      </div>
+      <div class="chart-box tall"><canvas id="g-memoria" aria-label="Memoria pico por tarea y sistema"></canvas></div>
+    </section>
+
+    <div class="grid2">
+      <section class="card">
+        <header>
+          <p class="kicker">Expresividad</p>
+          <h2>Tamaño del código</h2>
+          <p>El DSL usa <strong><span data-cifra="tokensVsPolars"></span>&nbsp;%</strong> menos tokens que
+            Polars y <strong><span data-cifra="tokensVsPandas"></span>&nbsp;%</strong> menos que Pandas.</p>
+        </header>
+        <div class="controls">
+          <div class="segmented" role="group" aria-label="Medida" id="expr-medida"></div>
+        </div>
+        <div class="chart-box"><canvas id="g-expr" aria-label="Tokens o líneas por tarea"></canvas></div>
+      </section>
+      <section class="card">
+        <header>
+          <p class="kicker">Detección de errores</p>
+          <h2><span data-cifra="erroresCompilacion"></span> de <span data-cifra="erroresTotal"></span>
+            errores, antes de leer datos</h2>
+          <p>Cuándo se detecta cada error del corpus, en el DSL y en Polars.</p>
+        </header>
+        <div class="chart-box"><canvas id="g-errores" aria-label="Momento de detección de los errores"></canvas></div>
+      </section>
+    </div>
+
+    <section class="card">
+      <header>
+        <p class="kicker">El código</p>
+        <h2>La misma tarea, lado a lado</h2>
+        <p>Sin comentarios, tal como se contaron los tokens.</p>
+      </header>
+      <div class="controls">
+        <div class="segmented" role="group" aria-label="Tarea" id="codigo-tarea"></div>
+        <div class="segmented" role="group" aria-label="Comparar con" id="codigo-rival"></div>
+      </div>
+      <div class="code-compare" id="codigo"></div>
+    </section>
+
+    <section class="card">
+      <header>
+        <p class="kicker">Los 16 errores</p>
+        <h2>Qué dice cada uno</h2>
+        <p>Abre un caso para ver el mensaje del DSL y lo que hace Polars.</p>
+      </header>
+      <div class="cases" id="errores-casos"></div>
+    </section>
+
+    <footer class="bench-footer" id="entorno"></footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="benchmarks.js"></script>
+</body>
+</html>

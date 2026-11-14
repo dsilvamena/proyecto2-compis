@@ -1,0 +1,7 @@
+// Se suma la columna de texto canal en lugar del monto.
+PIPELINE caso {
+    FROM PARQUET(file: "ventas.parquet")
+        AS TABLE[id: INT, cliente_id: INT, canal: STRING?, monto: DECIMAL?, descuento: DECIMAL];
+    AGGREGATE { GROUP_BY cliente_id; SUM(canal) AS total; }
+    TO PARQUET(file: "salida/caso.parquet");
+}
