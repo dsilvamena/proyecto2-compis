@@ -1,0 +1,7 @@
+// DERIVE reutiliza el nombre monto y se pierde el monto original.
+PIPELINE caso {
+    FROM PARQUET(file: "ventas.parquet")
+        AS TABLE[id: INT, cliente_id: INT, canal: STRING?, monto: DECIMAL?, descuento: DECIMAL];
+    DERIVE { monto = monto * (1 - descuento); }
+    TO PARQUET(file: "salida/caso.parquet");
+}

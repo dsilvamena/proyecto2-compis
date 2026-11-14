@@ -33,6 +33,9 @@ services:
     # Scripts, datos TPC-H y resultados de los benchmarks quedan en bench/ del repositorio.
     volumes:
       - ./bench:/app/bench
+      # Salidas de bench/analisis.py: tablas y figuras del reporte y datos de la página web.
+      - ./reporte:/app/reporte
+      - ./etl_dsl/web/static:/app/etl_dsl/web/static
     # Datos, verificación, mediciones y zip; ver bench/README.md.
     command: ["python", "bench/todo.py"]
     profiles: ["bench"]

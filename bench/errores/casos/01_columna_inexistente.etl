@@ -1,0 +1,7 @@
+// Columna mal escrita: mnto en lugar de monto.
+PIPELINE caso {
+    FROM PARQUET(file: "ventas.parquet")
+        AS TABLE[id: INT, cliente_id: INT, canal: STRING?, monto: DECIMAL?, descuento: DECIMAL];
+    FILTER { WHERE mnto > 100; }
+    TO PARQUET(file: "salida/caso.parquet");
+}

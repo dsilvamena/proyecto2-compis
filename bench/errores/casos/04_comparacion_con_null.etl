@@ -1,0 +1,7 @@
+// Buscar montos faltantes con == NULL: en lógica de tres valores nunca es verdadero.
+PIPELINE caso {
+    FROM PARQUET(file: "ventas.parquet")
+        AS TABLE[id: INT, cliente_id: INT, canal: STRING?, monto: DECIMAL?, descuento: DECIMAL];
+    FILTER { WHERE monto == NULL; }
+    TO PARQUET(file: "salida/caso.parquet");
+}

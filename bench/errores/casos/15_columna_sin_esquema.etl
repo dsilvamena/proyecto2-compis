@@ -1,0 +1,6 @@
+// Columna mal escrita y sin esquema declarado: al compilar no se conocen las columnas.
+PIPELINE caso {
+    FROM PARQUET(file: "ventas.parquet");
+    FILTER { WHERE mnto > 100; }
+    TO PARQUET(file: "salida/caso.parquet");
+}

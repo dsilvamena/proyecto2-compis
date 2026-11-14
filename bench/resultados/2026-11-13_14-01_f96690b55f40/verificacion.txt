@@ -1,0 +1,26 @@
+ok    devoluciones / dsl -O0: referencia (devoluciones.parquet: 148301 filas, devoluciones_por_envio.parquet: 7 filas)
+ok    devoluciones / dsl
+ok    devoluciones / polars
+ok    devoluciones / pandas
+ok    devoluciones / duckdb
+ok    ingreso_descuento / dsl -O0: referencia (ingreso_descuento.parquet: 1 filas)
+ok    ingreso_descuento / dsl
+ok    ingreso_descuento / polars
+ok    ingreso_descuento / pandas
+ok    ingreso_descuento / duckdb
+ok    ingreso_por_pedido / dsl -O0: referencia (ingreso_por_pedido.parquet: 31264 filas)
+ok    ingreso_por_pedido / dsl
+ok    ingreso_por_pedido / polars
+ok    ingreso_por_pedido / pandas
+ok    ingreso_por_pedido / duckdb
+ok    limpieza_pedidos / dsl -O0: referencia (limpieza_pedidos.parquet: 5 filas)
+ok    limpieza_pedidos / dsl
+ok    limpieza_pedidos / polars
+ok    limpieza_pedidos / pandas
+ok    limpieza_pedidos / duckdb
+ok    resumen_precios / dsl -O0: referencia (resumen_precios.parquet: 4 filas)
+ok    resumen_precios / dsl
+ok    resumen_precios / polars
+ok    resumen_precios / pandas
+ok    resumen_precios / duckdb
+Todas las variantes coinciden.

@@ -1,0 +1,8 @@
+// Un paso escrito después del último TO: su resultado nunca se guarda.
+PIPELINE caso {
+    FROM PARQUET(file: "ventas.parquet")
+        AS TABLE[id: INT, cliente_id: INT, canal: STRING?, monto: DECIMAL?, descuento: DECIMAL];
+    FILL_NULL { monto = 0; }
+    TO PARQUET(file: "salida/caso.parquet");
+    FILTER { WHERE monto > 100; }
+}

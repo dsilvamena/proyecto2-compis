@@ -1,0 +1,7 @@
+// RENAME a un nombre que ya existe.
+PIPELINE caso {
+    FROM PARQUET(file: "ventas.parquet")
+        AS TABLE[id: INT, cliente_id: INT, canal: STRING?, monto: DECIMAL?, descuento: DECIMAL];
+    RENAME { monto AS canal; }
+    TO PARQUET(file: "salida/caso.parquet");
+}

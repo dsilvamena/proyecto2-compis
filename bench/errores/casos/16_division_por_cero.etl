@@ -1,0 +1,7 @@
+// División entre un descuento que puede ser 0 (SAFE_DIVIDE devolvería NULL).
+PIPELINE caso {
+    FROM PARQUET(file: "ventas.parquet")
+        AS TABLE[id: INT, cliente_id: INT, canal: STRING?, monto: DECIMAL?, descuento: DECIMAL];
+    DERIVE { razon = monto / descuento; }
+    TO PARQUET(file: "salida/caso.parquet");
+}
