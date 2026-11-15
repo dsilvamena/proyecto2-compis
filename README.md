@@ -112,11 +112,9 @@ compilador: el grafo de la IR antes y después de optimizar, los tokens del
 análisis léxico, el árbol de derivación de Lark, el AST, la IR en texto, el
 código Polars generado y las tablas que produce cada `SINK` y `OUTPUT` al ejecutar.
 
-- **Ayuda al escribir:** `Ctrl + Espacio` sugiere las columnas visibles en ese
-  punto (con su tipo), los pasos y pipelines del archivo y las operaciones con una
-  plantilla. Al pasar el mouse sobre una palabra clave, función, columna o paso se
-  muestra qué hace. Las sugerencias usan el último análisis con IR, así que siguen
-  funcionando mientras el programa tiene errores.
+- **Ayuda al pasar el mouse:** sobre una palabra clave, función, columna o paso
+  se muestra qué hace; en una columna, también su tipo. Usa el último análisis con
+  IR, así que sigue funcionando mientras el programa tiene errores.
 - **¿Quisiste decir?:** un `E_COLUMN` con una columna parecida a una existente
   ofrece la corrección en Problemas y en el menú de arreglos rápidos de Monaco.
 - **Qué cambió el optimizador:** la pestaña IR lista los pasos eliminados,

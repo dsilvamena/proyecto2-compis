@@ -71,7 +71,7 @@ const THEMES = {
   },
 };
 
-// lastValid: último resultado con IR (esquemas). Alimenta el autocompletado y la ayuda del editor
+// lastValid: último resultado con IR (esquemas). Alimenta la ayuda del editor
 // mientras el texto tiene errores; puede corresponder a una versión anterior del programa.
 const state = {
   result: null, lastValid: null, version: "after", sequence: 0, controller: null, timer: null,
@@ -130,10 +130,6 @@ function setupMonaco(monaco) {
     autoClosingPairs: [{ open: "{", close: "}" }, { open: "[", close: "]" }, { open: "(", close: ")" },
       { open: "\"", close: "\"", notIn: ["string"] }],
   });
-  monaco.languages.registerCompletionItemProvider("etl", {
-    triggerCharacters: ["."],
-    provideCompletionItems: (model, position) => ({ suggestions: completions(model, position) }),
-  });
   monaco.languages.registerHoverProvider("etl", { provideHover: hover });
   monaco.languages.registerCodeActionProvider("etl", { provideCodeActions: codeActions },
     { providedCodeActionKinds: ["quickfix"] });
@@ -146,7 +142,9 @@ function setupMonaco(monaco) {
     theme: theme(), automaticLayout: true, minimap: { enabled: false }, scrollBeyondLastLine: false,
     fontFamily: "JetBrains Mono, Courier New, monospace", fontSize: 13.5, tabSize: 4,
   };
-  editor = monaco.editor.create($("#editor"), { ...common, language: "etl", value: "" });
+  // Sin autocompletado: ni sugerencias al escribir ni las de Ctrl + Espacio (palabras del documento).
+  editor = monaco.editor.create($("#editor"), { ...common, language: "etl", value: "",
+    quickSuggestions: false, suggestOnTriggerCharacters: false, wordBasedSuggestions: "off" });
   codeViewer = monaco.editor.create($("#code"), { ...common, language: "python", readOnly: true, value: "" });
 
   editor.onDidChangeModelContent(() => {
@@ -156,16 +154,8 @@ function setupMonaco(monaco) {
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, run);
 }
 
-// Ayuda del editor: autocompletado, información al pasar el mouse y correcciones rápidas.
+// Ayuda del editor: información al pasar el mouse y correcciones rápidas.
 // Las columnas y los nombres salen del último análisis con IR (state.lastValid), no se infieren aquí.
-
-const COMPLETION_WORDS = () => [
-  ...LANGUAGE.keywords.map((w) => [w, monacoApi.languages.CompletionItemKind.Keyword]),
-  ...LANGUAGE.types.map((w) => [w, monacoApi.languages.CompletionItemKind.TypeParameter]),
-  ...LANGUAGE.functions.map((w) => [w, monacoApi.languages.CompletionItemKind.Function]),
-  ...LANGUAGE.constants.map((w) => [w, monacoApi.languages.CompletionItemKind.Constant]),
-  ...["CSV", "PARQUET", "DUCKDB", "SQLITE"].map((w) => [w, monacoApi.languages.CompletionItemKind.Module]),
-];
 
 function typeText(column) {
   return `${column.type ?? "ANY"}${column.nullable ? " · admite NULL" : ""}`;
@@ -219,54 +209,6 @@ function columnsAt(line) {
   }
   for (const n of graph.nodes) add(n.columns);
   return { columns, where: `el pipeline ${graph.name}` };
-}
-
-function completions(model, position) {
-  if (insideStringOrComment(model, position)) return [];
-  const monaco = monacoApi;
-  const Kind = monaco.languages.CompletionItemKind;
-  const word = model.getWordUntilPosition(position);
-  const range = new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn);
-  const before = model.getLineContent(position.lineNumber).slice(0, word.startColumn - 1);
-  const context = columnsAt(position.lineNumber);
-  const column = (c, label = c.name) => ({
-    label, kind: Kind.Field, insertText: label, range, sortText: `0${label}`, detail: typeText(c),
-    documentation: `Columna disponible en ${context.where}.`,
-  });
-
-  // Después de "left." o "right." solo caben columnas de ese lado del JOIN.
-  const side = /\b(left|right)\.$/.exec(before);
-  if (side) {
-    return (context?.columns ?? []).filter((c) => c.name.startsWith(`${side[1]}.`))
-      .map((c) => column(c, c.name.slice(side[1].length + 1)));
-  }
-  if (before.endsWith(".")) return [];
-
-  const items = (context?.columns ?? []).map((c) => column(c));
-  const found = state.lastValid && pipelineAt(state.lastValid, position.lineNumber);
-  if (found && !found.ast.linear) {
-    for (const node of found.graph.nodes) {
-      for (const name of node.origin) {
-        items.push({ label: name, kind: Kind.Variable, insertText: name, range, sortText: `1${name}`,
-          detail: node.kind, documentation: "Declaración de este pipeline (para FLOW)." });
-      }
-    }
-  }
-  for (const pipeline of state.lastValid?.ir.before?.pipelines ?? []) {
-    items.push({ label: pipeline.name, kind: Kind.Module, insertText: pipeline.name, range,
-      sortText: `2${pipeline.name}`, detail: "pipeline", documentation: "Pipeline de este archivo (para USE)." });
-  }
-  for (const [label, kind] of COMPLETION_WORDS()) {
-    const help = etlHelpMarkdown(label);
-    const snippet = ETL_SNIPPETS[label];
-    items.push({
-      label, kind: snippet ? Kind.Snippet : kind, range, sortText: `3${label}`,
-      insertText: snippet ?? label,
-      insertTextRules: snippet ? monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet : undefined,
-      detail: ETL_HELP[label]?.group, documentation: help ? { value: help } : undefined,
-    });
-  }
-  return items;
 }
 
 function hover(model, position) {

@@ -1,7 +1,7 @@
 "use strict";
 
 // Ayuda del lenguaje para el editor: se muestra al pasar el mouse sobre una palabra clave,
-// una función o un tipo, y como documentación de las sugerencias de autocompletado.
+// una función o un tipo.
 // Resume docs/lenguaje.md; si el lenguaje cambia, se actualiza aquí.
 
 const ETL_HELP = {
@@ -165,22 +165,6 @@ const ETL_HELP = {
   PARQUET: { group: "Conector", signature: "PARQUET(file)", text: "Archivo columnar Parquet." },
   DUCKDB: { group: "Conector", signature: "DUCKDB(file, table, schema?, mode?)", text: "Tabla de una base DuckDB. Al guardar, `mode` puede ser \"error\", \"replace\" o \"append\"." },
   SQLITE: { group: "Conector", signature: "SQLITE(file, table)", text: "Tabla de una base SQLite. Solo lectura." },
-};
-
-// Plantillas que inserta el autocompletado al elegir una operación (sintaxis de snippets de Monaco).
-const ETL_SNIPPETS = {
-  FILTER: "FILTER { WHERE ${1:condición}; }",
-  SELECT: "SELECT { COLUMNS ${1:columna}; }",
-  DERIVE: "DERIVE { ${1:nueva} = ${2:expresión}; }",
-  AGGREGATE: "AGGREGATE { GROUP_BY ${1:columna}; ${2:SUM}(${3:columna}) AS ${4:total}; }",
-  JOIN: "JOIN { TYPE ${1:INNER}; ON left.${2:columna} == right.${3:columna}; }",
-  SORT: "SORT { BY ${1:columna} ${2:DESC}; }",
-  DISTINCT: "DISTINCT { COLUMNS ${1:columna}; }",
-  RENAME: "RENAME { ${1:columna} AS ${2:nuevo_nombre}; }",
-  FILL_NULL: "FILL_NULL { ${1:columna} = ${2:0}; }",
-  DROP_NULLS: "DROP_NULLS { COLUMNS ${1:columna}; }",
-  FLOW: "FLOW {\n\t${1:origen} -> ${2:destino};\n}",
-  PIPELINE: "PIPELINE ${1:nombre} {\n\tFROM ${2:CSV}(file: \"${3:datos.csv}\");\n\t$0\n\tTO ${4:CSV}(file: \"${5:out/resultado.csv}\");\n}",
 };
 
 // Texto Markdown de la ayuda de una palabra (null si no tiene).
