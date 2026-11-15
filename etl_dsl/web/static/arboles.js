@@ -405,9 +405,10 @@
       const bar = html("div", { class: "tv-bar" });
       if (this.kind === "ast") {
         const group = html("div", { class: "segmented", role: "group", "aria-label": "Vista del AST" });
-        for (const [mode, text] of [["ast", "AST"], ["compare", "Comparar con el árbol"]]) {
+        for (const [mode, text] of [["ast", "AST"], ["compare", "Comparar con el árbol"], ["text", "Texto"]]) {
           const button = html("button", { type: "button", "aria-pressed": String(this.mode === mode) }, text);
           button.addEventListener("click", () => {
+            if (mode === "text" && this.maximized) this.toggleMaximized();
             this.mode = mode;
             group.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
             this.selected = null;
@@ -423,7 +424,8 @@
         this.selected = null;
         this.render();
       });
-      bar.append(html("label", { class: "tv-field" }, "Ver ", this.focusSelect));
+      const focusLabel = html("label", { class: "tv-field" }, "Ver ", this.focusSelect);
+      bar.append(focusLabel);
       this.help = html("span", { class: "tv-help" });
       this.zoomText = html("span", { class: "tv-zoom" }, "100 %");
       const tool = (text, label, action) => {
@@ -438,6 +440,7 @@
       this.maxButton = html("button", { type: "button", class: "ghost tv-max-button" });
       this.maxButton.addEventListener("click", () => this.toggleMaximized());
       bar.append(this.help, this.zoomText, zoom, this.maxButton);
+      this.graphControls = [focusLabel, this.help, this.zoomText, zoom, this.maxButton];
 
       this.body = html("div", { class: "tv-body" });
       this.panes = [this.pane(), this.pane()];
@@ -445,7 +448,10 @@
       this.notes = html("ul", { class: "tv-notes" });
       this.detail = html("div", { class: "tv-detail", "aria-live": "polite" });
       this.empty = html("p", { class: "empty tv-empty" });
-      this.root.append(bar, this.empty, this.body, this.notes, this.detail);
+      // Modo «Texto» de la pestaña AST: la lista desplegable original del estudio (renderAst en app.js).
+      this.textBox = html("div", { class: "ast tv-text" });
+      this.textBox.hidden = true;
+      this.root.append(bar, this.empty, this.body, this.notes, this.detail, this.textBox);
       host.replaceChildren(this.root);
       this.updateChrome();
     }
@@ -471,6 +477,14 @@
 
     render() {
       if (!this.models) return;
+      const text = this.mode === "text";
+      this.textBox.hidden = !text;
+      for (const control of this.graphControls) control.hidden = text;
+      if (text) {
+        this.empty.hidden = this.body.hidden = this.notes.hidden = this.detail.hidden = true;
+        this.callbacks.text?.(this.ast, this.textBox);  // renderAst(ast, contenedor)
+        return;
+      }
       if (!this.root.clientWidth) { this.dirty = true; return; }
       this.dirty = false;
       const compare = this.kind === "ast" && this.mode === "compare";

@@ -847,6 +847,49 @@ function renderTokens() {
   container.append(wrap);
 }
 
+// AST en texto: la lista desplegable original, que la pestaña AST muestra en su modo «Texto».
+
+function scalar(value) {
+  return value === null || typeof value !== "object";
+}
+
+function astNode(value, label, depth) {
+  if (scalar(value)) return element("div", { class: "leaf" }, `${label}: ${JSON.stringify(value)}`);
+  if (Array.isArray(value)) {
+    const details = element("details");
+    details.open = depth < 3;
+    details.append(element("summary", { class: "attr" }, `${label} [${value.length}]`));
+    value.forEach((item, index) => details.append(astNode(item, String(index), depth + 1)));
+    return details;
+  }
+  const details = element("details");
+  details.open = depth < 3;
+  const summary = element("summary");
+  if (label) summary.append(element("span", { class: "attr" }, `${label}: `));
+  summary.append(element("span", { class: "node-name" }, value.node ?? "objeto"));
+  const attributes = Object.entries(value).filter(([key, v]) => key !== "node" && key !== "span" && scalar(v));
+  if (attributes.length) {
+    summary.append(" ", element("span", { class: "attr" },
+      attributes.map(([key, v]) => `${key}=${JSON.stringify(v)}`).join(" ")));
+  }
+  if (value.span) {
+    summary.addEventListener("click", () => selectSpan({
+      start: { line: value.span.line, column: value.span.column },
+      end: { line: value.span.end_line, column: value.span.end_column },
+    }));
+  }
+  details.append(summary);
+  for (const [key, child] of Object.entries(value)) {
+    if (key !== "node" && key !== "span" && !scalar(child)) details.append(astNode(child, key, depth + 1));
+  }
+  return details;
+}
+
+function renderAst(ast, container) {
+  container.replaceChildren(ast ? astNode(ast, "", 0)
+    : element("p", { class: "empty" }, "El AST aparece cuando la sintaxis es válida."));
+}
+
 // Resultados
 
 function renderResults(results) {
@@ -946,7 +989,7 @@ function setupFiles() {
 function setupControls() {
   const callbacks = { select: (span) => selectSpan(span, false), preview: previewSpan };
   views.tree = window.Arboles.create($("#tree"), "parse", callbacks);
-  views.ast = window.Arboles.create($("#ast"), "ast", callbacks);
+  views.ast = window.Arboles.create($("#ast"), "ast", { ...callbacks, text: renderAst });
   const fieldset = $("#passes");
   for (const name of PASSES) {
     const label = element("label");
