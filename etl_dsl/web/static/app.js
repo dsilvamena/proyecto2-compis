@@ -130,6 +130,19 @@ function setupMonaco(monaco) {
     autoClosingPairs: [{ open: "{", close: "}" }, { open: "[", close: "]" }, { open: "(", close: ")" },
       { open: "\"", close: "\"", notIn: ["string"] }],
   });
+  const words = [
+    ...LANGUAGE.keywords.map((w) => [w, monaco.languages.CompletionItemKind.Keyword]),
+    ...LANGUAGE.types.map((w) => [w, monaco.languages.CompletionItemKind.TypeParameter]),
+    ...LANGUAGE.functions.map((w) => [w, monaco.languages.CompletionItemKind.Function]),
+    ...LANGUAGE.constants.map((w) => [w, monaco.languages.CompletionItemKind.Constant]),
+  ];
+  monaco.languages.registerCompletionItemProvider("etl", {
+    provideCompletionItems(model, position) {
+      const word = model.getWordUntilPosition(position);
+      const range = new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn);
+      return { suggestions: words.map(([label, kind]) => ({ label, kind, insertText: label, range })) };
+    },
+  });
   monaco.languages.registerHoverProvider("etl", { provideHover: hover });
   monaco.languages.registerCodeActionProvider("etl", { provideCodeActions: codeActions },
     { providedCodeActionKinds: ["quickfix"] });
@@ -142,9 +155,7 @@ function setupMonaco(monaco) {
     theme: theme(), automaticLayout: true, minimap: { enabled: false }, scrollBeyondLastLine: false,
     fontFamily: "JetBrains Mono, Courier New, monospace", fontSize: 13.5, tabSize: 4,
   };
-  // Sin autocompletado: ni sugerencias al escribir ni las de Ctrl + Espacio (palabras del documento).
-  editor = monaco.editor.create($("#editor"), { ...common, language: "etl", value: "",
-    quickSuggestions: false, suggestOnTriggerCharacters: false, wordBasedSuggestions: "off" });
+  editor = monaco.editor.create($("#editor"), { ...common, language: "etl", value: "" });
   codeViewer = monaco.editor.create($("#code"), { ...common, language: "python", readOnly: true, value: "" });
 
   editor.onDidChangeModelContent(() => {
