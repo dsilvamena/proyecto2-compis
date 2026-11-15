@@ -107,9 +107,24 @@ el repositorio local.
 ## Entorno web
 
 Editor Monaco con resaltado del DSL y errores léxicos, sintácticos, estructurales
-y de tipos marcados mientras se escribe. A la derecha muestra el grafo de la IR
-antes y después de optimizar, el AST, la IR en texto, el código Polars generado
-y las tablas que produce cada `SINK` y `OUTPUT` al ejecutar.
+y de tipos marcados mientras se escribe. A la derecha muestra cada fase del
+compilador: el grafo de la IR antes y después de optimizar, los tokens del
+análisis léxico, el árbol de derivación de Lark, el AST, la IR en texto, el
+código Polars generado y las tablas que produce cada `SINK` y `OUTPUT` al ejecutar.
+
+- **Ayuda al escribir:** `Ctrl + Espacio` sugiere las columnas visibles en ese
+  punto (con su tipo), los pasos y pipelines del archivo y las operaciones con una
+  plantilla. Al pasar el mouse sobre una palabra clave, función, columna o paso se
+  muestra qué hace. Las sugerencias usan el último análisis con IR, así que siguen
+  funcionando mientras el programa tiene errores.
+- **¿Quisiste decir?:** un `E_COLUMN` con una columna parecida a una existente
+  ofrece la corrección en Problemas y en el menú de arreglos rápidos de Monaco.
+- **Qué cambió el optimizador:** la pestaña IR lista los pasos eliminados,
+  fusionados y simplificados, y resalta las líneas que salen y entran; el grafo
+  «Antes» marca esos mismos nodos.
+- **Archivos y resultados:** abrir un `.etl` local, descargar el programa o el
+  Python generado, y ver una columna numérica de cada resultado como gráfico de barras.
+- **Tema claro u oscuro** con el botón de la barra superior (por defecto, el del sistema).
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\create_demo_data.py
@@ -126,7 +141,7 @@ escucha solo en este equipo salvo que se indique `--host`.
 
 | Endpoint | Qué hace |
 | --- | --- |
-| `POST /api/compile` | `{"source", "passes"?}` → diagnósticos, AST, IR antes y después con su grafo y esquemas, y código |
+| `POST /api/compile` | `{"source", "passes"?}` → diagnósticos, tokens, árbol de derivación, AST, IR antes y después con su grafo y esquemas (texto y columnas), y código |
 | `POST /api/run` | Lo mismo, más las primeras 100 filas de cada `SINK` y `OUTPUT` |
 | `GET /api/examples` | Programas de `input/` y `demo/` |
 
