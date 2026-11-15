@@ -92,18 +92,22 @@
         <p class="panel-intro">Árbol de derivación que construye el parser LALR de Lark con las reglas de
           <code>grammar.lark</code>. Compáralo con el AST: aquí aparece cada regla de la gramática; el AST solo
           conserva lo que necesitan las fases siguientes. Lark omite los símbolos y palabras clave fijas.</p>
-        <div id="tree" class="ast"></div>
+        <div id="tree" class="tv-host"></div>
       </div>
 
       <div class="panel" data-panel="ast" role="tabpanel" hidden>
-        <div id="ast" class="ast"></div>
+        <p class="panel-intro">El AST que construye <code>visitor.py</code>: solo lo que necesitan las fases siguientes.
+          «Comparar con el árbol» muestra, para una declaración, qué cambió respecto del árbol de derivación.</p>
+        <div id="ast" class="tv-host"></div>
       </div>
 
       <div class="panel" data-panel="ir" role="tabpanel" hidden>
         <div id="ir-changes" class="ir-changes" hidden></div>
         <div class="ir-columns">
-          <div><h2>Antes de optimizar</h2><pre id="ir-before" class="code-block"></pre></div>
-          <div><h2>Después de optimizar</h2><pre id="ir-after" class="code-block"></pre></div>
+          <div id="ir-before-column"><h2>Antes de optimizar</h2><pre id="ir-before" class="code-block"></pre></div>
+          <div><h2 id="ir-after-title">Después de optimizar</h2>
+            <p id="ir-same" class="hint ir-same" hidden></p>
+            <pre id="ir-after" class="code-block"></pre></div>
         </div>
       </div>
 
@@ -119,6 +123,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
   <script src="ayuda.js"></script>
+  <script src="arboles.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -122,8 +122,13 @@ código Polars generado y las tablas que produce cada `SINK` y `OUTPUT` al ejecu
 - **Qué cambió el optimizador:** la pestaña IR lista los pasos eliminados,
   fusionados y simplificados, y resalta las líneas que salen y entran; el grafo
   «Antes» marca esos mismos nodos.
-- **Archivos y resultados:** abrir un `.etl` local, descargar el programa o el
-  Python generado, y ver una columna numérica de cada resultado como gráfico de barras.
+- **Árbol y AST como grafos:** el árbol de derivación se dibuja con los tokens
+  alineados abajo (leídos en orden forman el programa) y el AST con tarjetas y
+  aristas con el nombre de cada campo. «Comparar con el árbol» muestra una
+  declaración en ambas formas y lo que cambió el `ASTBuilder`. Se navegan como un
+  mapa: arrastrar mueve, `Ctrl`/`⌘` + rueda hace zoom, `M` o «Maximizar» los abre
+  en una ventana grande (ahí la rueda sola hace zoom; `Esc` cierra).
+- **Archivos:** abrir un `.etl` local y descargar el programa o el Python generado.
 - **Tema claro u oscuro** con el botón de la barra superior (por defecto, el del sistema).
 
 ```powershell

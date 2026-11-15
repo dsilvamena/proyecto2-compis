@@ -78,6 +78,8 @@ const state = {
   fileName: "programa.etl",
 };
 let monacoApi, editor, codeViewer;
+// Pestañas Árbol y AST (arboles.js); se crean al arrancar.
+const views = {};
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -375,12 +377,27 @@ function codeActions(model, _range, context) {
   return { actions, dispose() {} };
 }
 
-function selectSpan(span) {
+function spanRange(span) {
+  return new monacoApi.Range(span.start.line, span.start.column, span.end.line, span.end.column);
+}
+
+// focus = false deja el foco donde está (por ejemplo, en el árbol que se navega con el teclado).
+function selectSpan(span, focus = true) {
   if (!span || !span.start) return;
-  const range = new monacoApi.Range(span.start.line, span.start.column, span.end.line, span.end.column);
+  const range = spanRange(span);
   editor.setSelection(range);
   editor.revealRangeInCenter(range);
-  editor.focus();
+  if (focus) editor.focus();
+}
+
+// Resalta sin seleccionar el rango de un nodo bajo el cursor (null lo quita).
+let previewDecorations;
+function previewSpan(span) {
+  previewDecorations ??= editor.createDecorationsCollection();
+  if (!span?.start) { previewDecorations.clear(); return; }
+  const range = spanRange(span);
+  previewDecorations.set([{ range, options: { className: "span-preview" } }]);
+  editor.revealRangeInCenterIfOutsideViewport(range);
 }
 
 function markerRange(d) {
@@ -464,8 +481,8 @@ function show(result) {
   renderProblems(diagnostics);
   renderGraph();
   renderTokens();
-  renderTree(result.tree);
-  renderAst(result.ast);
+  views.tree.update(result.tree, result.ast);
+  views.ast.update(result.tree, result.ast);
   $("#ir-before").textContent = result.ir.before?.text ?? "La IR se genera cuando sintaxis y estructura son válidas.";
   $("#ir-after").textContent = result.ir.after?.text ?? "La IR optimizada se genera cuando no hay errores de tipos.";
   renderIrChanges();
@@ -585,6 +602,19 @@ function diffLines(before, after) {
   return { a, b, removed, added };
 }
 
+// Diferencia de la IR de un resultado, calculada una vez (la usan la pestaña IR y el grafo).
+const irDiffs = new WeakMap();
+function irDiff(ir) {
+  if (!irDiffs.has(ir)) irDiffs.set(ir, diffLines(ir.before.text, ir.after.text));
+  return irDiffs.get(ir);
+}
+
+function irUnchanged(ir) {
+  if (!ir?.before?.text || !ir?.after?.text) return false;
+  const { removed, added } = irDiff(ir);
+  return !removed.size && !added.size;
+}
+
 function fillCode(target, lines, marked, cls) {
   target.replaceChildren(...lines.map((line, index) =>
     element("span", { class: marked.has(index) ? `line ${cls}` : "line" }, line || " ")));
@@ -594,17 +624,24 @@ function renderIrChanges() {
   const ir = state.result?.ir;
   const box = $("#ir-changes");
   const before = ir?.before?.text, after = ir?.after?.text;
+  // Si los pases no cambiaron la IR, una sola columna: comparar dos textos iguales no aporta nada.
+  const same = irUnchanged(ir);
   if (before && after) {
-    const { a, b, removed, added } = diffLines(before, after);
+    const { a, b, removed, added } = irDiff(ir);
     fillCode($("#ir-before"), a, removed, "del");
     fillCode($("#ir-after"), b, added, "add");
   }
-  if (!ir?.before || !ir?.after) { box.hidden = true; return; }
-  const passes = state.result.passes.map((name) => PASS_LABELS[name] ?? name);
+  const passes = (state.result?.passes ?? []).map((name) => PASS_LABELS[name] ?? name);
+  $("#ir-before-column").hidden = same;
+  $("#ir-after-title").textContent = same ? "IR" : "Después de optimizar";
+  $("#ir-same").hidden = !same;
+  $("#ir-same").textContent = passes.length
+    ? `Los pases aplicados (${passes.join(", ")}) no cambiaron la IR de este programa.`
+    : "Sin pases (-O0): la IR no se optimiza.";
+  if (!ir?.before || !ir?.after || same) { box.hidden = true; return; }
   box.replaceChildren(element("h2", {}, "Qué cambió el optimizador"));
-  box.append(element("p", { class: "hint" }, passes.length
-    ? `Pases aplicados: ${passes.join(", ")}. En el texto: rojo = sale de la IR, verde = entra.`
-    : "Sin pases (-O0): la IR optimizada es igual a la original."));
+  box.append(element("p", { class: "hint" },
+    `Pases aplicados: ${passes.join(", ")}. En el texto: rojo = sale de la IR, verde = entra.`));
   const list = element("ul");
   for (const [pipeline, entry] of optimizerChanges(ir)) {
     for (const item of entry.items) {
@@ -616,7 +653,6 @@ function renderIrChanges() {
       list.append(li);
     }
   }
-  if (!list.children.length && passes.length) list.append(element("li", { class: "hint" }, "Los pases no cambiaron la IR de este programa."));
   box.append(list);
   box.hidden = false;
 }
@@ -686,7 +722,14 @@ function renderGraph() {
   container.replaceChildren();
   $("#node-detail").hidden = true;
   const ir = state.result?.ir;
-  const version = state.version === "after" && ir?.after ? ir.after : ir?.before;
+  // Sin cambios del optimizador, "Antes" y "Después" son el mismo grafo: se desactiva la elección.
+  const unchanged = irUnchanged(ir);
+  document.querySelectorAll("[data-version]").forEach((button) => {
+    button.disabled = unchanged;
+    button.title = unchanged ? "Los pases no cambiaron la IR de este programa" : "";
+    button.setAttribute("aria-pressed", String(button.dataset.version === (unchanged ? "after" : state.version)));
+  });
+  const version = (unchanged || state.version === "after") && ir?.after ? ir.after : ir?.before;
   if (!version) {
     container.append(element("p", { class: "empty" }, "El grafo aparece cuando sintaxis y estructura son válidas."));
     return;
@@ -851,77 +894,6 @@ function renderTokens() {
   container.append(wrap);
 }
 
-// Árbol de derivación (árbol concreto de Lark)
-
-function treeNode(node, depth) {
-  if (node.token) {
-    const leaf = element("div", { class: "leaf token-leaf", tabindex: "0", title: "Ubicar en el programa" });
-    leaf.append(element("span", { class: "attr" }, `${node.token} `), element("code", {}, JSON.stringify(node.lexeme)));
-    leaf.addEventListener("click", () => selectSpan(node));
-    leaf.addEventListener("keydown", (event) => { if (event.key === "Enter") selectSpan(node); });
-    return leaf;
-  }
-  const details = element("details");
-  details.open = depth < 4;
-  const summary = element("summary");
-  summary.append(element("span", { class: "node-name" }, node.rule));
-  if (node.start) {
-    summary.append(" ", element("span", { class: "attr" }, `${node.start.line}:${node.start.column}`));
-    summary.addEventListener("click", () => selectSpan(node));
-  }
-  details.append(summary, ...node.children.map((child) => treeNode(child, depth + 1)));
-  return details;
-}
-
-function renderTree(tree) {
-  $("#tree").replaceChildren(tree ? treeNode(tree, 0)
-    : element("p", { class: "empty" }, "El árbol aparece cuando la sintaxis es válida."));
-}
-
-// AST
-
-function scalar(value) {
-  return value === null || typeof value !== "object";
-}
-
-function astNode(value, label, depth) {
-  if (scalar(value)) return element("div", { class: "leaf" }, `${label}: ${JSON.stringify(value)}`);
-  if (Array.isArray(value)) {
-    const details = element("details");
-    details.open = depth < 3;
-    details.append(element("summary", { class: "attr" }, `${label} [${value.length}]`));
-    value.forEach((item, index) => details.append(astNode(item, String(index), depth + 1)));
-    return details;
-  }
-  const details = element("details");
-  details.open = depth < 3;
-  const summary = element("summary");
-  if (label) summary.append(element("span", { class: "attr" }, `${label}: `));
-  summary.append(element("span", { class: "node-name" }, value.node ?? "objeto"));
-  const attributes = Object.entries(value).filter(([key, v]) => key !== "node" && key !== "span" && scalar(v));
-  if (attributes.length) {
-    summary.append(" ", element("span", { class: "attr" },
-      attributes.map(([key, v]) => `${key}=${JSON.stringify(v)}`).join(" ")));
-  }
-  if (value.span) {
-    summary.addEventListener("click", () => selectSpan({
-      start: { line: value.span.line, column: value.span.column },
-      end: { line: value.span.end_line, column: value.span.end_column },
-    }));
-  }
-  details.append(summary);
-  for (const [key, child] of Object.entries(value)) {
-    if (key !== "node" && key !== "span" && !scalar(child)) details.append(astNode(child, key, depth + 1));
-  }
-  return details;
-}
-
-function renderAst(ast) {
-  const container = $("#ast");
-  container.replaceChildren(ast ? astNode(ast, "", 0)
-    : element("p", { class: "empty" }, "El AST aparece cuando la sintaxis es válida."));
-}
-
 // Resultados
 
 function renderResults(results) {
@@ -960,89 +932,8 @@ function renderResults(results) {
       grid.append(thead, tbody);
       wrap.append(grid);
       container.append(title, wrap);
-      const chart = resultChart(table);
-      if (chart) container.append(chart);
     }
   }
-}
-
-// Gráfico de barras de una columna numérica de la tabla (solo las filas recibidas).
-
-const NUMERIC_TYPE = /^(Int|UInt|Float|Decimal)/;
-const CHART_ROWS = 25;
-
-function numeric(value) {
-  if (typeof value === "number") return Number.isFinite(value) ? value : null;
-  if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) return Number(value);
-  return null;  // NULL y valores no numéricos no dibujan barra
-}
-
-function resultChart(table) {
-  const numericColumns = table.columns.map((column, index) => ({ ...column, index }))
-    .filter((column) => NUMERIC_TYPE.test(column.type));
-  if (!numericColumns.length || !table.rows.length) return null;
-  const labels = table.columns.map((column, index) => ({ ...column, index }))
-    .filter((column) => !NUMERIC_TYPE.test(column.type) || /(^id$|_id$)/i.test(column.name));
-  // Valor por defecto: la primera columna numérica que no parece un identificador.
-  const fallback = numericColumns.find((c) => !/(^id$|_id$)/i.test(c.name)) ?? numericColumns[0];
-  const details = element("details", { class: "chart" });
-  const summary = element("summary", {}, "Gráfico");
-  const controls = element("div", { class: "chart-controls" });
-  const valueSelect = element("select", { "aria-label": "Columna del gráfico" });
-  for (const column of numericColumns) valueSelect.append(element("option", { value: column.index }, column.name));
-  valueSelect.value = String(fallback.index);
-  const labelSelect = element("select", { "aria-label": "Etiqueta de cada barra" });
-  labelSelect.append(element("option", { value: "" }, "N.º de fila"));
-  for (const column of labels) labelSelect.append(element("option", { value: column.index }, column.name));
-  if (labels.length) labelSelect.value = String(labels[0].index);
-  const valueLabel = element("label", {}, "Valor ");
-  valueLabel.append(valueSelect);
-  const nameLabel = element("label", {}, "Etiqueta ");
-  nameLabel.append(labelSelect);
-  controls.append(valueLabel, nameLabel);
-  const plot = element("div", { class: "chart-plot" });
-  const note = element("p", { class: "hint" });
-  const draw = () => {
-    const column = Number(valueSelect.value);
-    const label = labelSelect.value === "" ? null : Number(labelSelect.value);
-    const rows = table.rows.slice(0, CHART_ROWS);
-    const values = rows.map((row) => numeric(row[column]));
-    plot.replaceChildren(barChart(rows.map((row, i) => (label === null ? `Fila ${i + 1}` : String(row[label] ?? "NULL"))),
-      values, rows.map((row) => (row[column] === null ? "NULL" : String(row[column]))), table.columns[column].name));
-    note.textContent = `Primeras ${rows.length} filas recibidas${rows.length < table.total_rows ? ` de ${table.total_rows}` : ""}.`
-      + " Los valores exactos están en la tabla; NULL no dibuja barra.";
-  };
-  valueSelect.addEventListener("change", draw);
-  labelSelect.addEventListener("change", draw);
-  details.addEventListener("toggle", () => { if (details.open) draw(); }, { once: true });
-  details.append(summary, controls, plot, note);
-  return details;
-}
-
-function barChart(labels, values, texts, name) {
-  const row = 24, labelWidth = 150, valueWidth = 90, width = 640;
-  const known = values.filter((v) => v !== null);
-  const min = Math.min(0, ...known), max = Math.max(0, ...known);
-  const span = max - min || 1;
-  const plotWidth = width - labelWidth - valueWidth;
-  const x = (v) => labelWidth + ((v - min) / span) * plotWidth;
-  const height = labels.length * row + 8;
-  const root = svg("svg", { viewBox: `0 0 ${width} ${height}`, width: "100%", role: "img",
-    "aria-label": `Gráfico de barras de ${name}` });
-  root.append(svg("line", { class: "axis", x1: x(0), x2: x(0), y1: 0, y2: labels.length * row }));
-  labels.forEach((text, i) => {
-    const y = i * row;
-    root.append(svg("text", { class: "bar-label", x: labelWidth - 8, y: y + 16, "text-anchor": "end" },
-      truncate(text, 20)));
-    const value = values[i];
-    if (value !== null) {
-      root.append(svg("rect", { class: "bar", x: Math.min(x(0), x(value)), y: y + 4, height: row - 8,
-        width: Math.max(1, Math.abs(x(value) - x(0))), rx: 2 }));
-    }
-    root.append(svg("text", { class: "bar-value", x: width - valueWidth + 8, y: y + 16 },
-      truncate(texts[i], 12)));
-  });
-  return root;
 }
 
 // Interfaz
@@ -1053,6 +944,8 @@ function selectTab(name) {
   });
   document.querySelectorAll("[data-panel]").forEach((panel) => { panel.hidden = panel.dataset.panel !== name; });
   if (name === "graph") renderGraph();
+  if (name === "tree") views.tree.refresh();
+  if (name === "ast") views.ast.refresh();
 }
 
 // Archivos: abrir un .etl local y descargar el programa o el Python generado.
@@ -1098,6 +991,9 @@ function setupFiles() {
 }
 
 function setupControls() {
+  const callbacks = { select: (span) => selectSpan(span, false), preview: previewSpan };
+  views.tree = window.Arboles.create($("#tree"), "parse", callbacks);
+  views.ast = window.Arboles.create($("#ast"), "ast", callbacks);
   const fieldset = $("#passes");
   for (const name of PASSES) {
     const label = element("label");
